@@ -1,4 +1,6 @@
 import random
+import numpy as np
+import math
 
 class Job:
 	def __init__(self, maxStartTime, maxLength):
@@ -6,6 +8,7 @@ class Job:
 		self.job_length = random.uniform(0, maxLength)
 		self.work_left = self.job_length
 		self.done = 0
+		self.done_time = 0
 		
 def createJobSchedule(numberOfJobs, maxStartTime, maxLength):
 	jobSchedule = []
@@ -14,17 +17,35 @@ def createJobSchedule(numberOfJobs, maxStartTime, maxLength):
 	jobSchedule.sort(key = lambda x: x.start_time)
 	return jobSchedule
 	
-def doWork(waga, jobSchedule, workTokens):
-	max_waga = max(waga)
-	max_index = waga.index(max_waga)
+def doWork(wagi, jobSchedule, workTokens):
+	print("debug...")
+	print("tokens - " + str(workTokens))
+	print("wagi: ")
+	for waga in wagi:
+		print(waga)
+		
+	if (workTokens == -1):
+		#ostatni job, wykonujemy po kolei
+		for job in jobSchedule:
+			job.done = 1
+			job.work_left = 0
+		return
+	max_index = np.nanargmax(wagi)
 	if (jobSchedule[max_index].work_left > workTokens):
 		jobSchedule[max_index].work_left = jobSchedule[max_index].work_left - workTokens
 		taskInProgress = jobSchedule[max_index]
 	else:
+		if (jobSchedule[max_index].done == 1):
+			return
 		jobSchedule[max_index].done = 1
-		waga[max_index] = 0
+		wagi[max_index] = math.nan
 		workTokens = workTokens - jobSchedule[max_index].work_left
-		doWork(waga, jobSchedule, workTokens)
+		jobSchedule[max_index].work_left = 0
+		if (workTokens != 0):
+			doWork(wagi, jobSchedule, workTokens)
+	print("stan...")
+	for job in jobSchedule:
+		print(str(job.start_time) + " " + str(job.work_left) + " " + str(job.done))
 
 def evaluateLoop(params, jobSchedule):
 	workLeftParam = params[0]
@@ -41,7 +62,7 @@ def evaluateLoop(params, jobSchedule):
 			workTokens = jobSchedule[i+1].start_time - jobSchedule[i].start_time
 		else:
 			workTokens = -1 #ostatni element, będzie pracował ile trzeba. Przypadek do uwzględnienia później
-		wagi = [] #to zjebane, bo wzialem to za array a to lista. Musze albo zrobic z tego array uczciwy, albo waga umiescic jako atrybut joba (wtedy iteracja zawsze po calosci), albo trzymac tuple z indexem
+		wagi = np.zeros(i+1)
 		for j in range(0, i+1):
 		#dla i = 0 wykona się raz
 			if (jobSchedule[j].done == 0):
@@ -52,9 +73,9 @@ def evaluateLoop(params, jobSchedule):
 					wagi[j] = (timeOfBirthParam * (jobSchedule[i].start_time - jobSchedule[j].start_time)) - (workLeftParam * jobSchedule[j].work_left)
 					# bez kosztu zmiany
 			else:
-				wagi[j] = 0
-		doWork()
+				wagi[j] = math.nan
+		doWork(wagi, jobSchedule, workTokens)
 		
 		
-		
+#zrobić self done time
 
