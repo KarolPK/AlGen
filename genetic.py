@@ -7,7 +7,7 @@ for job in jobSchedule:
 	print(str(job.start_time) + " " + str(job.work_left) + " " + str(job.done))
 print("Working..." + '\n')
 	
-evaluateLoop([1,1,1], jobSchedule)
+print(evaluateLoop([1,1,1], jobSchedule))
 
 
 

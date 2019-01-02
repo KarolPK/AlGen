@@ -26,18 +26,8 @@ def doWork(wagi, jobSchedule, workTokens, startTime, taskInProgress):
 		print(waga)
 	startTokens = workTokens
 	if (workTokens == -99999):
-		#ostatni job, wykonujemy po kolei
-		jobs = [job for job in jobSchedule if job.done == 0]
-		for job in jobs:
-			job.done = 1
-			job.done_time = startTime + job.work_left
-			job.time_waited = job.start_time - job.done_time
-			startTime = startTime + job.work_left
-			job.work_left = 0
-		print("stan...")
-		for job in jobSchedule:
-			print(str(job.start_time) + " " + str(job.work_left) + " " + str(job.done) + " " + str(job.done_time) + " " + str(job.time_waited))
-		return
+		startTokens = 1000000
+		workTokens = 1000000
 	try:
 		max_index = np.nanargmax(wagi)
 	except ValueError:
@@ -100,7 +90,14 @@ def evaluateLoop(params, jobSchedule):
 			else:
 				wagi[j] = np.nan
 		doWork(wagi, jobSchedule, workTokens, jobSchedule[i].start_time, taskInProgress)
+	avg_waited = 0
+	for job in jobSchedule:
+		avg_waited = avg_waited + job.time_waited
+	avg_waited = avg_waited / float(len(jobSchedule))
+	list_for_time_done = [job.done_time for job in jobSchedule]
+	sum_time = max(list_for_time_done)
+	print([avg_waited, sum_time])
+	return (1/sum_time) + (1/avg_waited) #wstępna funkcja celu
 		
 		
-#zrobić self done time
 
