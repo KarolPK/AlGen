@@ -25,7 +25,7 @@ def doWork(wagi, jobSchedule, workTokens, startTime, taskInProgress):
 	for waga in wagi:
 		print(waga)
 	startTokens = workTokens
-	if (workTokens == -1):
+	if (workTokens == -99999):
 		#ostatni job, wykonujemy po kolei
 		jobs = [job for job in jobSchedule if job.done == 0]
 		for job in jobs:
@@ -42,14 +42,14 @@ def doWork(wagi, jobSchedule, workTokens, startTime, taskInProgress):
 		max_index = np.nanargmax(wagi)
 	except ValueError:
 		return
-	if (taskInProgress != None):
-		print("taskInProgress = " + str(taskInProgress.start_time))
-	if ((taskInProgress != None) and (taskInProgress != jobSchedule[max_index])):
+	if (taskInProgress[0] != None):
+		print("taskInProgress = " + str(taskInProgress[0].start_time))
+	if ((taskInProgress[0] != None) and (taskInProgress[0] != jobSchedule[max_index])):
 		workTokens = workTokens - 1
 		print("zmiana kontekstu, workTokens - 1")
 	if (jobSchedule[max_index].work_left > workTokens):
 		jobSchedule[max_index].work_left = jobSchedule[max_index].work_left - workTokens
-		taskInProgress = jobSchedule[max_index]
+		taskInProgress[0] = jobSchedule[max_index]
 	else:
 		#if (jobSchedule[max_index].done == 1): załatwione trycatchem wyzej
 		#	return
@@ -60,7 +60,7 @@ def doWork(wagi, jobSchedule, workTokens, startTime, taskInProgress):
 		jobSchedule[max_index].work_left = 0
 		jobSchedule[max_index].time_waited = startTime + usedTokens - jobSchedule[max_index].start_time
 		jobSchedule[max_index].done_time = startTime + usedTokens
-		taskInProgress = None
+		taskInProgress[0] = None
 		
 		print("time waited = " + str(jobSchedule[max_index].time_waited))
 		print("time done = " + str(jobSchedule[max_index].done_time))
@@ -76,7 +76,8 @@ def evaluateLoop(params, jobSchedule):
 	timeOfBirthParam = params[1]
 	costOfTransition = params[2]
 	presentTime = 0
-	taskInProgress = None
+	taskInProgress = []
+	taskInProgress.append(None)
 	workTokens = 0
 #wyznacza wagę zadań w danym momencie i decyduje o kolejności wykonania na podstawie parametrów
 	for i in range(0, len(jobSchedule)):
@@ -85,12 +86,12 @@ def evaluateLoop(params, jobSchedule):
 		if (i+1 < len(jobSchedule)):
 			workTokens = jobSchedule[i+1].start_time - jobSchedule[i].start_time
 		else:
-			workTokens = -1 #ostatni element, będzie pracował ile trzeba. Przypadek do uwzględnienia później
+			workTokens = -99999 #ostatni element, będzie pracował ile trzeba. Przypadek do uwzględnienia później
 		wagi = np.zeros(i+1)
 		for j in range(0, i+1):
 		#dla i = 0 wykona się raz
 			if (jobSchedule[j].done == 0):
-				if (taskInProgress != jobSchedule[j]):
+				if (taskInProgress[0] != jobSchedule[j]):
 					wagi[j] = (timeOfBirthParam * (jobSchedule[i].start_time - jobSchedule[j].start_time) - costOfTransition) - (workLeftParam * jobSchedule[j].work_left)
 					# czyli waga = [ a ( teraz - timeOfBirth) - karaZaPrzejście ] - ( b * work_left) 
 				else:
