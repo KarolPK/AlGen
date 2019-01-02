@@ -1,6 +1,5 @@
 import random
 import numpy as np
-import math
 
 class Job:
 	def __init__(self, maxStartTime, maxLength):
@@ -9,6 +8,7 @@ class Job:
 		self.work_left = self.job_length
 		self.done = 0
 		self.done_time = 0
+		self.time_waited = 0
 		
 def createJobSchedule(numberOfJobs, maxStartTime, maxLength):
 	jobSchedule = []
@@ -17,35 +17,59 @@ def createJobSchedule(numberOfJobs, maxStartTime, maxLength):
 	jobSchedule.sort(key = lambda x: x.start_time)
 	return jobSchedule
 	
-def doWork(wagi, jobSchedule, workTokens):
+def doWork(wagi, jobSchedule, workTokens, startTime, taskInProgress):
 	print("debug...")
+	print("time is " + str(startTime))
 	print("tokens - " + str(workTokens))
 	print("wagi: ")
 	for waga in wagi:
 		print(waga)
-		
+	startTokens = workTokens
 	if (workTokens == -1):
 		#ostatni job, wykonujemy po kolei
-		for job in jobSchedule:
+		jobs = [job for job in jobSchedule if job.done == 0]
+		for job in jobs:
 			job.done = 1
+			job.done_time = startTime + job.work_left
+			job.time_waited = job.start_time - job.done_time
+			startTime = startTime + job.work_left
 			job.work_left = 0
+		print("stan...")
+		for job in jobSchedule:
+			print(str(job.start_time) + " " + str(job.work_left) + " " + str(job.done) + " " + str(job.done_time) + " " + str(job.time_waited))
 		return
-	max_index = np.nanargmax(wagi)
+	try:
+		max_index = np.nanargmax(wagi)
+	except ValueError:
+		return
+	if (taskInProgress != None):
+		print("taskInProgress = " + str(taskInProgress.start_time))
+	if ((taskInProgress != None) and (taskInProgress != jobSchedule[max_index])):
+		workTokens = workTokens - 1
+		print("zmiana kontekstu, workTokens - 1")
 	if (jobSchedule[max_index].work_left > workTokens):
 		jobSchedule[max_index].work_left = jobSchedule[max_index].work_left - workTokens
 		taskInProgress = jobSchedule[max_index]
 	else:
-		if (jobSchedule[max_index].done == 1):
-			return
+		#if (jobSchedule[max_index].done == 1): załatwione trycatchem wyzej
+		#	return
 		jobSchedule[max_index].done = 1
-		wagi[max_index] = math.nan
+		wagi[max_index] = np.nan
 		workTokens = workTokens - jobSchedule[max_index].work_left
+		usedTokens = startTokens - workTokens
 		jobSchedule[max_index].work_left = 0
+		jobSchedule[max_index].time_waited = startTime + usedTokens - jobSchedule[max_index].start_time
+		jobSchedule[max_index].done_time = startTime + usedTokens
+		taskInProgress = None
+		
+		print("time waited = " + str(jobSchedule[max_index].time_waited))
+		print("time done = " + str(jobSchedule[max_index].done_time))
 		if (workTokens != 0):
-			doWork(wagi, jobSchedule, workTokens)
+			doWork(wagi, jobSchedule, workTokens, startTime + usedTokens, taskInProgress)
 	print("stan...")
 	for job in jobSchedule:
-		print(str(job.start_time) + " " + str(job.work_left) + " " + str(job.done))
+		print(str(job.start_time) + " " + str(job.work_left) + " " + str(job.done) + " " + str(job.done_time) + " " + str(job.time_waited))
+
 
 def evaluateLoop(params, jobSchedule):
 	workLeftParam = params[0]
@@ -73,8 +97,8 @@ def evaluateLoop(params, jobSchedule):
 					wagi[j] = (timeOfBirthParam * (jobSchedule[i].start_time - jobSchedule[j].start_time)) - (workLeftParam * jobSchedule[j].work_left)
 					# bez kosztu zmiany
 			else:
-				wagi[j] = math.nan
-		doWork(wagi, jobSchedule, workTokens)
+				wagi[j] = np.nan
+		doWork(wagi, jobSchedule, workTokens, jobSchedule[i].start_time, taskInProgress)
 		
 		
 #zrobić self done time
