@@ -44,11 +44,13 @@ class Genetic:
         for sch in self.pool:
             tempAccEval += sch.eval
             sch.accEval = tempAccEval
-        for k in range(1,len(self.pool)):
+        while selectedPop < len(self.pool):
             pick = random.uniform(0, 1)
             for i in range(1,len(self.pool)):
                 if self.pool[i].accEval > pick:
-                    selectedPop.append(self.pool[i-1])
+                    selectedPop.append(self.pool[i])
+                    break
+        self.pool = selectedPop
         
         
         
