@@ -5,8 +5,13 @@ poolSize = 100
 startAgeCoefficient = 512
 startRemainingTimeCoeff = 512
 startCostOfTrans = 100
-class Genetic:
 
+import numpy as np
+
+# class Gene:
+#     np.A
+
+class Genetic:
     # exampleGen
     def __init__(self, poolSize):
         self.pool = []
@@ -16,9 +21,10 @@ class Genetic:
                               random.uniform(0, startRemainingTimeCoeff),
                               startCostOfTrans])
 
-    def mutate:
+    def mutate(self):
         for genom in self.pool:
             for gen in genom:
+                pass
 
 jobSchedule = createJobSchedule(5, 15, 10)
 tries = []*10
