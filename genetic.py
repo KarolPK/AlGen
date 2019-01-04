@@ -1,6 +1,6 @@
 from job_scheduler import *
-import copy
 import bit_array
+import random
 
 poolSize = 100
 startAgeCoefficient = 512
@@ -9,35 +9,56 @@ startCostOfTrans = 100
 
 import numpy as np
 
-class Item:
-    def __init__(self):
+class SchParams:
+    def __init__(self, jobSchedule):
         self.workLeftParam = random.uniform(0, startAgeCoefficient)
         self.timeOfBirthParam = random.uniform(0, startRemainingTimeCoeff)
         self.costOfTransition = random.uniform(0, startCostOfTrans)
-        self.eval = np.nan
-
+        self.eval = evaluateLoop([self.workLeftParam, self.timeOfBirthParam, self.costOfTransition], jobSchedule)
+        self.accEval = 0
+        
 class Genetic:
     # exampleGen
     def __init__(self, poolSize):
         self.pool = []
+        self.jobSchedule = createJobSchedule(5, 15, 10)
 
         for i in range(poolSize):
-            self.pool.append([random.uniform(0, startAgeCoefficient),
-                              random.uniform(0, startRemainingTimeCoeff),
-                              startCostOfTrans])
+            self.pool.append(SchParams(self.jobSchedule))
 
     def mutate(self):
         for genom in self.pool:
             for gen in genom:
                 pass
+    def select(self):
+        selectedPop = []
+        #normalizacja fitness 
+        norm = 0
+        for sch in self.pool:
+            norm += sch.eval
+        for sch in self.pool:
+            sch.eval /= norm
+        #akumulacja
+        self.pool.sort(key=lambda x: x.eval, reverse = True)
+        tempAccEval = 0
+        for sch in self.pool:
+            tempAccEval += sch.eval
+            sch.accEval = tempAccEval
+        for k in range(1,len(self.pool)):
+            pick = random.uniform(0, 1)
+            for i in range(1,len(self.pool)):
+                if self.pool[i].accEval > pick:
+                    selectedPop.append(self.pool[i-1])
+        
+        
+        
+            
+        
+        
+        
 
-jobSchedule = createJobSchedule(5, 15, 10)
 
-for job in jobSchedule:
-	print(job)
+pop = Genetic(100)
+pop.select()
 
-print("Working..." + '\n')
-print("cel:", evaluateLoop([1, 1, 1], jobSchedule), '\n')
 
-for i in Genetic(10).pool:
-    print(i)
