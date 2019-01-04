@@ -79,9 +79,9 @@ def doWork(wagi, jobSchedule, workTokens, startTime, taskInProgress):
 
 def evaluateLoop(params, orygJobSchedule):
     jobSchedule = copy.deepcopy(orygJobSchedule)
-    workLeftParam = params[0]
-    timeOfBirthParam = params[1]
-    costOfTransition = params[2]
+    workLeftParam = int(params[0])
+    timeOfBirthParam = int(params[1])
+    costOfTransition = int(params[2])
 
     presentTime = 0
     taskInProgress = []
