@@ -82,6 +82,7 @@ def evaluateLoop(params, orygJobSchedule):
     workLeftParam = params[0]
     timeOfBirthParam = params[1]
     costOfTransition = params[2]
+
     presentTime = 0
     taskInProgress = []
     taskInProgress.append(None)

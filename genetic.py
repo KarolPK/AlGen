@@ -1,5 +1,6 @@
 from job_scheduler import *
 import copy
+import bit_array
 
 poolSize = 100
 startAgeCoefficient = 512
@@ -8,8 +9,12 @@ startCostOfTrans = 100
 
 import numpy as np
 
-# class Gene:
-#     np.A
+class Item:
+    def __init__(self):
+        self.workLeftParam = random.uniform(0, startAgeCoefficient)
+        self.timeOfBirthParam = random.uniform(0, startRemainingTimeCoeff)
+        self.costOfTransition = random.uniform(0, startCostOfTrans)
+        self.eval = np.nan
 
 class Genetic:
     # exampleGen
@@ -27,14 +32,12 @@ class Genetic:
                 pass
 
 jobSchedule = createJobSchedule(5, 15, 10)
-tries = []*10
-for i, t in enumerate(tries):
-    tries[i] = copy.deepcopy(jobSchedule)
+
 for job in jobSchedule:
-	print(str(job.start_time) + " " + str(job.work_left) + " " + str(job.done))
+	print(job)
+
 print("Working..." + '\n')
-	
-print(evaluateLoop([1, 1, 1], jobSchedule), '\n')
+print("cel:", evaluateLoop([1, 1, 1], jobSchedule), '\n')
 
 for i in Genetic(10).pool:
     print(i)
