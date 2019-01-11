@@ -2,15 +2,16 @@ from job_scheduler import *
 import random
 import math
 import matplotlib.pyplot as plt
-
-alias = 'czwartek_wieczorem_'
+import os
+alias = 'piatek_4e'
+os.mkdir(alias)
 
 timeOfBirthBits = 9
 workLeftBits = 9
 costOfTransitionBits = 7
 allBits = timeOfBirthBits + workLeftBits + costOfTransitionBits
-pMutation = 0.02
-pCrossover = 0.01
+pMutation = 0.005
+pCrossover = 0.1
 
 debug = 0
 
@@ -115,13 +116,13 @@ class SchParams():
 class Genetic:
     def __init__(self, poolSize):
         self.pool = []
-        self.jobSchedule = createJobSchedule(10, 20, 10)
-        self.fittness = 0
+        self.jobSchedule = createJobSchedule(20, 30, 10)
+        self.fitness = 0
 
         for i in range(poolSize):
             self.pool.append(SchParams(self.jobSchedule))
         for i in self.pool:
-            self.fittness += i.eval
+            self.fitness += i.eval
 
     def __str__(self):
         temp = '['
@@ -129,6 +130,10 @@ class Genetic:
             temp += str(sch.eval)[:7] + ', '
         temp = temp[:-2] + ']'
         return temp
+
+    def eval(self):
+        for sch in self.pool:
+            sch.eval = evaluateLoop([sch.workLeftParam(), sch.timeOfBirthParam(), sch.costOfTransition()], self.jobSchedule)
 
     def mutate(self):
         if debug:
@@ -170,12 +175,20 @@ class Genetic:
 
     def select(self):
         selectedPop = []
-        #normalizacja fitness
-        self.fittness = 0
+        #zmiana fitness
+        minEval = self.pool[0].eval
         for sch in self.pool:
-            self.fittness += sch.eval
+            if sch.eval < minEval:
+                minEval = sch.eval
+        minEval *= 0.9
         for sch in self.pool:
-            sch.eval /= self.fittness
+            sch.eval -= minEval
+
+        self.fitness = 0
+        for sch in self.pool:
+            self.fitness += sch.eval
+        for sch in self.pool:
+            sch.eval /= self.fitness
         #akumulacja
         self.pool.sort(key=lambda x: x.eval, reverse = True)
         tempAccEval = 0
@@ -195,7 +208,7 @@ class Genetic:
         logs = []
         generation = 0
         delta = 1
-        lastOverallFitness = self.fittness
+        lastOverallFitness = self.fitness
         while ((maxGenerations and minDelta == 0 and generation < maxGenerations) or
                (maxGenerations == 0 and minDelta and delta > minDelta) or
                (maxGenerations and minDelta and generation < maxGenerations and delta > minDelta)):
@@ -206,6 +219,9 @@ class Genetic:
             self.mutate()
             self.eval()
             Xplt = []
+            if generation == 0:
+                xmin = 0.9 * (self.pool[len(self.pool) - 1].eval)
+                xmax = 2 * (self.pool[0].eval) - xmin
             if not generation % 20:
                 print(self)
                 count = 0
@@ -216,38 +232,43 @@ class Genetic:
                             count += 1
                         if a is b:
                             same += 1
-                if xmin > round(self.pool[len(self.pool) - 1].eval, 5):
-                    xmin = round(self.pool[len(self.pool) - 1].eval, 5)
-                if xmax < round(self.pool[0].eval, 5):
-                    xmax = round(self.pool[0].eval, 5)
                 print("Same:", same, "Identical", count, "Best:", round(self.pool[0].eval, 5), "Worst:",
                       round(self.pool[len(self.pool) - 1].eval, 5))
             if generation % 10 == 0:
+                if xmin > (self.pool[len(self.pool) - 1].eval):
+                    xmin = self.pool[len(self.pool) - 1].eval
+                if xmax < self.pool[0].eval:
+                    xmax = 1.05 * self.pool[0].eval
                 for i in self.pool:
                     Xplt.append(i.eval)
                 plt.clf()
+                # plt.axvline(x=fifo_eval, label='FIFO', color='r')
+                fig, ax = plt.subplots(1)
+                plt.text(0.8, 0.9, 'FIFO: '+ str(fifo_eval), transform=ax.transAxes)
                 plt.xlim([xmin, xmax])
                 plt.ylim([0, len(self.pool)])
                 plt.hist(Xplt, bins=20)
-                plt.savefig(alias+str(generation))
+                plt.grid()
+                plt.savefig(alias+'/'+alias+'_'+str(generation))
+
+            temp = (generation, round(lastOverallFitness, 3), round(delta, 3))
+            print(temp)
+
+            logs.append(temp)
+            logFitness.append(lastOverallFitness / len(self.pool))
+            lastOverallFitness = self.fitness
 
             self.select() # UWAGA normalizuje sie fittness
 
-            delta = (- self.fittness + lastOverallFitness) / lastOverallFitness
+            delta = (- self.fitness + lastOverallFitness) / lastOverallFitness
             if debug:
                 pairs = 0
                 for first in self.pool:
                     for second in self.pool:
                         if first is second:
                             pairs += 1
-                print (len(self.pool), '\t', round(delta, 4), '\t', round(lastOverallFitness, 2), '\t', round(self.fittness, 2))
+                print (len(self.pool), '\t', round(delta, 4), '\t', round(lastOverallFitness, 2), '\t', round(self.fitness, 2))
 
-            temp = (generation, round(lastOverallFitness, 3), round(delta, 3))
-            print (temp)
-
-
-            logs.append(temp)
-            lastOverallFitness = self.fittness
             generation += 1
 
         # for v1, v2, v3 in logs:
@@ -255,46 +276,19 @@ class Genetic:
 
 
 pop = Genetic(100)
-pop.run(1000, 0)
 
-# spec = SchParams(createJobSchedule(5, 10, 15))
-#
-# for attr in ["workLeftParam()", "timeOfBirthParam()", "costOfTransition()"]:
-#     gene = spec.__getattribute__(attr)
-#     # in progress
-#     # print(gene)
-#     for i in range(len(gene)):
-#         if random.random() < 0.6:
-#             if gene[i] == 0:
-#                 gene[i] = 1
-#             else:
-#                 gene[i] = 0
+logFitness = []
+fifo_eval = round(evaluateLoop([0, 1000, 0], pop.jobSchedule), 3)
+print("FIFO: ", fifo_eval)
+pop.run(101, 0)
 
-# it = BitArray(16)
-# print(repr(it))
-# integ = it.__int__()
-# print(type(integ), integ)
-# print()
-# print(it)
-# for i in range(len(it)):
-#     if random.random() < pMutation:
-#         if it[i] == 0:
-#             it[i] = 1
-#         else:
-#             it[i] = 0
-# print(type(it), it)
+plt.clf()
+plt.plot(range(len(logFitness)),logFitness)
+plt.grid()
+plt.savefig(alias + '/' + alias + '_' + 'fitness')
 
-# jS = createJobSchedule(5, 5, 5)
-# genome1 = SchParams(jS)
-# genome2 = SchParams(jS)
-#
-# cPoint = random.randrange(1, workLeftBits)
-# n_gen1 = genome1.workLeftParam()[:cPoint] + genome2.workLeftParam()[cPoint:]  # self.timeOfBirthParam(), self.costOfTransition()
-# n_gen2 = genome2.workLeftParam()[:cPoint] + genome1.workLeftParam()[cPoint:]
-# print(genome1.workLeftParam(), genome2.workLeftParam(), cPoint, n_gen1, n_gen2)
-# genome1.workLeftParam() = n_gen1
-# genome2.workLeftParam() = n_gen2
-
-# from operator import itemgetter
-# temp = genome1.__set("workLeftParam()")
-# print(temp)
+plt.clf()
+# fig, ax = plt.subplots(1)
+# plt.xlim([xmin, xmax])
+# plt.ylim([0, len(self.pool)])
+# plt.hist(Xplt, bins=20)
